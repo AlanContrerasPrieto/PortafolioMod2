@@ -143,7 +143,6 @@ def scale_data(X_train: pd.DataFrame, X_valid: pd.DataFrame, X_test: pd.DataFram
     """
     # 1. Escalar Features (X)
     scaler_X = MinMaxScaler()
-    
     # Fit y Transform SÓLO en el conjunto de entrenamiento
     X_train_scaled = scaler_X.fit_transform(X_train)
     # Transformar Validacion y Test con el scaler fiteado en Train
@@ -153,7 +152,6 @@ def scale_data(X_train: pd.DataFrame, X_valid: pd.DataFrame, X_test: pd.DataFram
     # 2. Escalar Target (y)
     # y (variable objetivo) se escala por separado si es una predicción de valor numérico
     scaler_y = MinMaxScaler()
-    
     # y_train debe ser re-formateado a (n_samples, 1) para el scaler
     y_train_scaled = scaler_y.fit_transform(y_train.values.reshape(-1, 1)).flatten()
     y_valid_scaled = scaler_y.transform(y_valid.values.reshape(-1, 1)).flatten()
@@ -198,13 +196,10 @@ def plot_predictions(y_true, y_pred, df_index, title_prefix="Análisis de Predic
     :param df_index: Índice de tiempo (fecha/hora) para el conjunto de prueba.
     :param title_prefix: Prefijo para el título del gráfico.
     """
-    # El índice de tiempo debe corresponder a la longitud de las predicciones.
-    # Recuerda que al crear secuencias (sequence_length), pierdes los primeros 
-    # 'sequence_length' puntos del índice.
     start_index = len(df_index) - len(y_true)
     time_index_plot = df_index[start_index:]
     
-    # 1. Gráfico Normal (Predicciones vs. Real)
+    # 1. Gráfico 
     plt.figure(figsize=(18, 8))
     
     # Valores Reales (Variable Objetivo)
@@ -230,16 +225,3 @@ def plot_predictions(y_true, y_pred, df_index, title_prefix="Análisis de Predic
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
-
-# --- Cómo usar la función (Ejemplo) ---
-# Tienes que obtener el índice de tiempo original para el conjunto de prueba.
-# Si tu DataFrame original se llamaba 'data' y el test set era el último 25%,
-# debes aislar ese índice:
-
-# Ejemplo de cómo obtener el índice correcto (Asume que 'data' es el DF original con índice Datetime)
-# len_train = len(X_train)
-# len_valid = len(X_valid)
-# test_start_index = len_train + len_valid
-# index_test_data = data.index[test_start_index:]
-
-# plot_predictions(y_true, y_pred, index_test_data)
