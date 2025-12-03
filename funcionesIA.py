@@ -90,7 +90,7 @@ def train_valid_test_split(X: pd.DataFrame,y: pd.Series, test_size: float=0.2, v
     X_valid, X_test, y_valid, y_test    = train_test_split(X_temp,y_temp, test_size=valid_size, shuffle=False)
     return X_train, X_valid, X_test, y_train, y_valid, y_test
 
-def add_time_features(df: pd.DataFrame):
+def add_time_features(df: pd.DataFrame, datamin: bool=True):
     """
     Agrega características de tiempo al DataFrame basado en el índice de fecha/hora.
     :param df: DataFrame de pandas con un índice de fecha/hora.
@@ -101,9 +101,10 @@ def add_time_features(df: pd.DataFrame):
         raise ValueError("El índice del DataFrame debe ser un DatetimeIndex.")
 
     #df['min'] = df.index.minute
-    min = df.index.minute
-    df['min_sin'] = np.sin(2 * np.pi * min / 60)
-    df['min_cos'] = np.cos(2 * np.pi * min / 60)
+    if datamin:
+        min = df.index.minute
+        df['min_sin'] = np.sin(2 * np.pi * min / 60)
+        df['min_cos'] = np.cos(2 * np.pi * min / 60)
 
     #df['hour'] = df.index.hour
     hour = df.index.hour
@@ -220,6 +221,70 @@ def plot_predictions(y_true, y_pred, df_index, title_prefix="Análisis de Predic
     plt.title(f'{title_prefix} - Valores Reales vs. Predicciones', fontsize=16)
     plt.xlabel('Fecha y Hora', fontsize=12)
     plt.ylabel('Temperatura del Aceite (OT)', fontsize=12)
+    plt.legend()
+    plt.grid(True, linestyle=':', alpha=0.6)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+def plot_full_series_predictions(df_original: pd.DataFrame, target_col: str, 
+                                 y_true: np.ndarray, y_pred: np.ndarray, 
+                                 test_start_index: int, sequence_length: int):
+    """
+    Grafica la serie de tiempo original completa y superpone las predicciones
+    del modelo sobre la sección de prueba.
+
+    :param df_original: DataFrame original (completo) con el índice de tiempo.
+    :param target_col: Nombre de la columna objetivo (e.g., 'OT').
+    :param y_true: Valores reales (desescalados) del conjunto de prueba.
+    :param y_pred: Valores predichos (desescalados) del modelo.
+    :param test_start_index: El índice (número de fila) donde comienza el 
+                             conjunto de prueba en el DataFrame original.
+    :param sequence_length: La longitud de la ventana usada en la LSTM (e.g., 96).
+    """
+    plt.figure(figsize=(20, 8))
+    
+    # 1. Graficar la Serie Completa Original
+    # Se utiliza todo el índice de tiempo y los valores de la columna objetivo
+    plt.plot(df_original.index, df_original[target_col], 
+             label='Serie Real Completa (OT)', 
+             color='gray', 
+             linestyle='-', 
+             linewidth=1.0, 
+             alpha=0.6)
+    
+    # 2. Determinar la Sección de Predicción
+    # El índice de la predicción comienza en el punto donde inicia el test set,
+    # más la longitud de la secuencia (porque la primera predicción se hace
+    # después de haber visto toda la primera ventana).
+    
+    # Indice donde comienza la primera predicción
+    pred_start_index = test_start_index + sequence_length
+    
+    # Asegurarse de que el índice de tiempo para la predicción coincida con y_pred
+    # Se usan solo los valores del índice que corresponden a las predicciones
+    index_pred = df_original.index[pred_start_index : pred_start_index + len(y_pred)]
+    
+    
+    # 3. Graficar las Predicciones
+    # Las predicciones se superponen a la serie original.
+    plt.plot(index_pred, y_pred, 
+             label='Predicciones del Modelo (Test Set)', 
+             color='red', 
+             linestyle='--', 
+             linewidth=2.0)
+    
+    # Opcional: Graficar el valor real de la sección de prueba para mejor comparación
+    plt.plot(index_pred, y_true, 
+             label='Valores Reales del Test Set', 
+             color='blue', 
+             linestyle='-', 
+             linewidth=1.5,
+             alpha=0.8)
+    
+    plt.title(f'Predicciones del Modelo LSTM Superpuestas en la Serie Completa de {target_col}', fontsize=16)
+    plt.xlabel('Fecha y Hora', fontsize=12)
+    plt.ylabel(f'{target_col} (Temperatura Desescalada)', fontsize=12)
     plt.legend()
     plt.grid(True, linestyle=':', alpha=0.6)
     plt.xticks(rotation=45)
